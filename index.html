@@ -18,79 +18,79 @@
         <main class="main-layout">
             <!-- Left Side: Data Source and Settings -->
             <div class="left-panel">
-                <!-- Data Source Selection -->
-                <section class="data-source-section">
-                    <h2>Choose Data Source</h2>
-                    <div class="source-options">
-                        <button class="source-btn active" id="fileUploadBtn" onclick="switchToFileUpload()">
-                            📁 Upload Excel File
-                        </button>
-                        <button class="source-btn" id="googleSheetsBtn" onclick="switchToGoogleSheets()">
-                            📊 Google Sheets Link
-                        </button>
-                    </div>
-                </section>
+            <!-- Data Source Selection -->
+            <section class="data-source-section">
+                <h2>Choose Data Source</h2>
+                <div class="source-options">
+                    <button class="source-btn active" id="fileUploadBtn" onclick="switchToFileUpload()">
+                        📁 Upload Excel File
+                    </button>
+                    <button class="source-btn" id="googleSheetsBtn" onclick="switchToGoogleSheets()">
+                        📊 Google Sheets Link
+                    </button>
+                </div>
+            </section>
 
-                <!-- File Upload Section -->
-                <section class="upload-section" id="fileUploadSection">
-                    <div class="upload-area" id="uploadArea">
-                        <div class="upload-content">
-                            <div class="upload-icon">📊</div>
-                            <h3>Drag & Drop Excel File</h3>
-                            <p>or click to browse</p>
-                            <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
-                        </div>
+            <!-- File Upload Section -->
+            <section class="upload-section" id="fileUploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📊</div>
+                        <h3>Drag & Drop Excel File</h3>
+                        <p>or click to browse</p>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
                     </div>
-                </section>
+                </div>
+            </section>
 
-                <!-- Google Sheets Section -->
-                <section class="google-sheets-section" id="googleSheetsSection" style="display: none;">
-                    <div class="sheets-input-area">
-                        <h3>📊 Google Sheets Integration</h3>
-                        <p>Enter your Google Sheets shareable link below:</p>
-                        <div class="url-input-container">
-                            <input type="url" id="sheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit..." class="sheets-url-input">
-                            <button id="loadSheetsBtn" class="load-sheets-btn">Load Data</button>
-                        </div>
-                        <div class="sheets-help">
-                            <details>
-                                <summary>📋 How to set up Google Sheets access?</summary>
-                                <div class="help-content">
-                                    <h4>Step 1: Publish to Web</h4>
-                                    <ol>
-                                        <li>Open your Google Sheets document</li>
-                                        <li>Go to <strong>File → Share → Publish to web</strong></li>
-                                        <li>Select <strong>"Entire Document"</strong></li>
-                                        <li>Choose <strong>"Comma-separated values (.csv)"</strong></li>
-                                        <li>Click <strong>"Publish"</strong></li>
-                                        <li>Confirm by clicking <strong>"OK"</strong></li>
-                                    </ol>
-                                    
-                                    <h4>Step 2: Make it Publicly Accessible</h4>
-                                    <ol>
-                                        <li>Click <strong>"Share"</strong> button (top right)</li>
-                                        <li>Change access to <strong>"Anyone with the link can view"</strong></li>
-                                        <li>Copy the share link and paste it above</li>
-                                    </ol>
-                                    
-                                    <div class="help-note">
-                                        <p><strong>⚠️ Important:</strong> Both steps are required for the integration to work properly!</p>
-                                        <p><strong>💡 Alternative:</strong> If you're having issues, you can download your sheet as Excel (.xlsx) and use the file upload option instead.</p>
-                                    </div>
+            <!-- Google Sheets Section -->
+            <section class="google-sheets-section" id="googleSheetsSection" style="display: none;">
+                <div class="sheets-input-area">
+                    <h3>📊 Google Sheets Integration</h3>
+                    <p>Enter your Google Sheets shareable link below:</p>
+                    <div class="url-input-container">
+                        <input type="url" id="sheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit..." class="sheets-url-input">
+                        <button id="loadSheetsBtn" class="load-sheets-btn">Load Data</button>
+                    </div>
+                    <div class="sheets-help">
+                        <details>
+                            <summary>📋 How to set up Google Sheets access?</summary>
+                            <div class="help-content">
+                                <h4>Step 1: Publish to Web</h4>
+                                <ol>
+                                    <li>Open your Google Sheets document</li>
+                                    <li>Go to <strong>File → Share → Publish to web</strong></li>
+                                    <li>Select <strong>"Entire Document"</strong></li>
+                                    <li>Choose <strong>"Comma-separated values (.csv)"</strong></li>
+                                    <li>Click <strong>"Publish"</strong></li>
+                                    <li>Confirm by clicking <strong>"OK"</strong></li>
+                                </ol>
+                                
+                                <h4>Step 2: Make it Publicly Accessible</h4>
+                                <ol>
+                                    <li>Click <strong>"Share"</strong> button (top right)</li>
+                                    <li>Change access to <strong>"Anyone with the link can view"</strong></li>
+                                    <li>Copy the share link and paste it above</li>
+                                </ol>
+                                
+                                <div class="help-note">
+                                    <p><strong>⚠️ Important:</strong> Both steps are required for the integration to work properly!</p>
+                                    <p><strong>💡 Alternative:</strong> If you're having issues, you can download your sheet as Excel (.xlsx) and use the file upload option instead.</p>
                                 </div>
-                            </details>
-                        </div>
+                            </div>
+                        </details>
                     </div>
-                </section>
+                </div>
+            </section>
 
-                <!-- File Info Section -->
-                <section class="file-info" id="fileInfo" style="display: none;">
-                    <h3>📋 Data Information</h3>
-                    <div class="info-content">
-                        <p id="fileDetails"></p>
-                        <div class="columns-found" id="columnsFound"></div>
-                    </div>
-                </section>
+            <!-- File Info Section -->
+            <section class="file-info" id="fileInfo" style="display: none;">
+                <h3>📋 Data Information</h3>
+                <div class="info-content">
+                    <p id="fileDetails"></p>
+                    <div class="columns-found" id="columnsFound"></div>
+                </div>
+            </section>
 
                 <!-- Format Customization Panel -->
                 <section class="format-customization" id="formatCustomization" style="display: none;">
@@ -124,14 +124,6 @@
                                 <label>Height (cm):</label>
                                 <input type="number" id="paperHeight" value="12.5" min="1" max="40" step="0.1" onchange="updateFormat()">
                             </div>
-                        </div>
-
-                        <div class="format-group">
-                            <label>Page Orientation:</label>
-                            <select id="orientation" onchange="updateFormat()">
-                                <option value="portrait">Portrait</option>
-                                <option value="landscape">Landscape</option>
-                            </select>
                         </div>
 
                         <div class="format-row">
@@ -225,72 +217,72 @@
 
             <!-- Right Side: Table View and Download Options -->
             <div class="right-panel">
-                <!-- Customer Selection Table -->
-                <div id="customerTable" class="customer-table-section" style="display: none;">
-                    <div class="selection-mode-toggle">
-                        <button onclick="switchToTableMode()" class="mode-btn active" id="tableModeBtn">📋 Table Selection</button>
-                        <button onclick="switchToRowMode()" class="mode-btn" id="rowModeBtn">🔢 Row Numbers</button>
+            <!-- Customer Selection Table -->
+            <div id="customerTable" class="customer-table-section" style="display: none;">
+                <div class="selection-mode-toggle">
+                    <button onclick="switchToTableMode()" class="mode-btn active" id="tableModeBtn">📋 Table Selection</button>
+                    <button onclick="switchToRowMode()" class="mode-btn" id="rowModeBtn">🔢 Row Numbers</button>
+                </div>
+                
+                <div id="tableSelectionMode">
+                    <h3>📋 Select Customers</h3>
+                    <div class="table-controls">
+                        <button onclick="selectAllCustomers()" class="control-btn">✅ Select All</button>
+                        <button onclick="clearAllCustomers()" class="control-btn">❌ Clear All</button>
+                        <button onclick="selectFirstN()" class="control-btn">🔢 Select First 25</button>
+                        <span class="selected-count">Selected: <span id="selectedCount">0</span></span>
                     </div>
                     
-                    <div id="tableSelectionMode">
-                        <h3>📋 Select Customers</h3>
-                        <div class="table-controls">
-                            <button onclick="selectAllCustomers()" class="control-btn">✅ Select All</button>
-                            <button onclick="clearAllCustomers()" class="control-btn">❌ Clear All</button>
-                            <button onclick="selectFirstN()" class="control-btn">🔢 Select First 25</button>
-                            <span class="selected-count">Selected: <span id="selectedCount">0</span></span>
+                    <div class="table-container">
+                        <table id="customersTable">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>Excel Row</th>
+                                    <th>Customer Name</th>
+                                    <th>Address</th>
+                                    <th>Contact Number</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customersTableBody">
+                                <!-- Customer data will be populated here -->
+                            </tbody>
+                        </table>
+                </div>
+            </div>
+
+            <!-- Row Number Selection (Alternative method) -->
+            <div id="rowSelectionMode" style="display: none;">
+                <div id="selectionSection" class="selection-section">
+                    <h3>🎯 Select Customers</h3>
+                    <div class="selection-content">
+                        <div class="input-group">
+                            <label for="startRow">Start from Excel Row Number:</label>
+                            <input type="number" id="startRow" min="2" value="2" placeholder="e.g., 2">
                         </div>
-                        
-                        <div class="table-container">
-                            <table id="customersTable">
-                                <thead>
-                                    <tr>
-                                        <th>Select</th>
-                                        <th>Excel Row</th>
-                                        <th>Customer Name</th>
-                                        <th>Address</th>
-                                        <th>Contact Number</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="customersTableBody">
-                                    <!-- Customer data will be populated here -->
-                                </tbody>
-                            </table>
+                        <div class="input-group">
+                            <label for="endRow">End at Excel Row Number:</label>
+                            <input type="number" id="endRow" min="2" value="26" placeholder="e.g., 26">
+                        </div>
+                        <div class="selection-note">
+                            <p>💡 <strong>Note:</strong> Row 1 is usually the header row, so customer data typically starts from row 2.</p>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Row Number Selection (Alternative method) -->
-                    <div id="rowSelectionMode" style="display: none;">
-                        <div id="selectionSection" class="selection-section">
-                            <h3>🎯 Select Customers</h3>
-                            <div class="selection-content">
-                                <div class="input-group">
-                                    <label for="startRow">Start from Excel Row Number:</label>
-                                    <input type="number" id="startRow" min="2" value="2" placeholder="e.g., 2">
-                                </div>
-                                <div class="input-group">
-                                    <label for="endRow">End at Excel Row Number:</label>
-                                    <input type="number" id="endRow" min="2" value="26" placeholder="e.g., 26">
-                                </div>
-                                <div class="selection-note">
-                                    <p>💡 <strong>Note:</strong> Row 1 is usually the header row, so customer data typically starts from row 2.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Generate Section -->
+            <!-- Generate Section -->
                     <section class="generate-section" id="generateSection">
-                        <h3>📄 Generate Documents</h3>
-                        <div class="generate-buttons">
-                            <button id="generateWordBtn" class="generate-btn word-btn">
-                                📝 Generate Word Document
-                            </button>
-                            <button id="generatePdfBtn" class="generate-btn pdf-btn">
-                                📄 Generate PDF Document
-                            </button>
-                        </div>
-                    </section>
+                <h3>📄 Generate Documents</h3>
+                <div class="generate-buttons">
+                    <button id="generateWordBtn" class="generate-btn word-btn">
+                        📝 Generate Word Document
+                    </button>
+                    <button id="generatePdfBtn" class="generate-btn pdf-btn">
+                        📄 Generate PDF Document
+                    </button>
+                </div>
+            </section>
 
                     <!-- Preview Section (Always Visible) -->
                     <section class="preview-section" id="previewSection" style="display: none;">

@@ -1086,7 +1086,7 @@ header p {
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
-.switch-btn {
+    .switch-btn {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     color: white;
     border: none;
@@ -1109,12 +1109,12 @@ header p {
     .main-layout {
         grid-template-columns: 1fr;
         gap: 20px;
-    }
-    
+}
+
     .left-panel,
     .right-panel {
         min-height: auto;
-    }
+}
 }
 
 @media (max-width: 768px) {
@@ -1124,8 +1124,8 @@ header p {
     
     header h1 {
         font-size: 2rem;
-    }
-    
+}
+
     .left-panel,
     .right-panel {
         padding: 20px;
@@ -1133,13 +1133,13 @@ header p {
     
     .upload-area {
         padding: 20px 15px;
-    }
-    
+}
+
     .source-options {
         flex-direction: column;
         align-items: center;
-    }
-    
+}
+
     .source-btn {
         width: 100%;
         max-width: 300px;
@@ -1152,11 +1152,11 @@ header p {
     .generate-buttons {
         flex-direction: column;
         align-items: center;
-    }
-    
+}
+
     .generate-btn {
         width: 100%;
-        max-width: 300px;
+    max-width: 300px;
     }
     
     .table-controls {
@@ -1187,8 +1187,8 @@ header p {
     .customer-address {
         max-width: 150px;
         font-size: 0.7rem;
-    }
-    
+}
+
     .format-row {
         grid-template-columns: 1fr;
     }
@@ -1213,16 +1213,16 @@ header p {
     .modal-content {
         width: 95%;
         margin: 1rem;
-    }
-    
+}
+
     .modal-header {
         padding: 1rem 1.5rem 0.75rem 1.5rem;
     }
     
     .modal-body {
         padding: 1rem 1.5rem;
-    }
-    
+}
+
     .modal-actions {
         padding: 0.75rem 1.5rem 1rem 1.5rem;
         flex-direction: column;

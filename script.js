@@ -5,7 +5,6 @@ let currentDataSource = 'file'; // 'file' or 'sheets'
 let formatSettings = {
     paperWidth: 7.75,
     paperHeight: 12.5,
-    orientation: 'portrait',
     marginTop: 0.2,
     marginBottom: 0.2,
     marginLeft: 0.2,
@@ -32,6 +31,7 @@ const paperSizes = {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
+    initializeFormatEventListeners();
     loadFormatSettings();
     updatePreview();
 });
@@ -62,6 +62,38 @@ function initializeEventListeners() {
     // Generate document events
     generateWordBtn.addEventListener('click', () => generateDocument('word'));
     generatePdfBtn.addEventListener('click', () => generateDocument('pdf'));
+}
+
+function initializeFormatEventListeners() {
+    // Add event listeners to all format inputs for real-time updates
+    const formatInputs = [
+        'paperWidth', 'paperHeight',
+        'marginTop', 'marginBottom', 'marginLeft', 'marginRight',
+        'fontFamily', 'headerFontSize', 'bodyFontSize',
+        'headerColor', 'textColor', 'companyColor', 'lineSpacing'
+    ];
+    
+    formatInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            // Add event listeners for immediate updates
+            input.addEventListener('change', updateFormat);
+            input.addEventListener('input', updateFormat);
+            
+            // For color inputs, also listen to color picker changes
+            if (input.type === 'color') {
+                input.addEventListener('input', updateFormat);
+            }
+        }
+    });
+    
+    // Special handling for paper size select
+    const paperSizeSelect = document.getElementById('paperSizeSelect');
+    if (paperSizeSelect) {
+        paperSizeSelect.addEventListener('change', updatePaperSize);
+    }
+    
+    console.log('Format event listeners initialized');
 }
 
 // Source switching functions
@@ -746,6 +778,9 @@ function validateInputs() {
 async function generateDocument(format = 'word') {
     let selectedCustomers = [];
     
+    // Make sure format settings are up-to-date before generating
+    updateFormat();
+    
     // Check which mode is active
     const tableMode = document.getElementById('tableSelectionMode').style.display !== 'none';
     
@@ -800,12 +835,7 @@ async function generateDocument(format = 'word') {
         
         hideStatus();
         
-        // Show success message with format info
-        const formatInfo = `📄 Document generated successfully!\n` +
-                          `📏 Format: ${formatSettings.paperWidth}×${formatSettings.paperHeight}cm (${formatSettings.orientation})\n` +
-                          `🎨 Font: ${formatSettings.fontFamily.split(',')[0]} - ${formatSettings.bodyFontSize}px\n` +
-                          `👥 Customers: ${selectedCustomers.length}`;
-        alert(formatInfo);
+        console.log(`Document generated successfully - ${format.toUpperCase()}: ${formatSettings.paperWidth}×${formatSettings.paperHeight}cm, Font: ${formatSettings.fontFamily.split(',')[0]} ${formatSettings.bodyFontSize}px, Customers: ${selectedCustomers.length}`);
         
     } catch (error) {
         console.error(`Error generating ${format} document:`, error);
@@ -852,6 +882,7 @@ async function createWordDocument(customers) {
                         text: "Customer Name: ",
                         bold: true,
                         size: bodySize,
+                        color: textColor,
                         font: formatSettings.fontFamily.split(',')[0].trim()
                     }),
                     new docx.TextRun({
@@ -871,6 +902,7 @@ async function createWordDocument(customers) {
                         text: "Address: ",
                         bold: true,
                         size: bodySize,
+                        color: textColor,
                         font: formatSettings.fontFamily.split(',')[0].trim()
                     }),
                     new docx.TextRun({
@@ -890,6 +922,7 @@ async function createWordDocument(customers) {
                         text: "Contact Number: ",
                         bold: true,
                         size: bodySize,
+                        color: textColor,
                         font: formatSettings.fontFamily.split(',')[0].trim()
                     }),
                     new docx.TextRun({
@@ -955,10 +988,13 @@ async function createWordDocument(customers) {
         }
     }
     
-    // Use format settings for page dimensions and margins
-    const orientation = formatSettings.orientation === 'landscape' ? docx.PageOrientation.LANDSCAPE : docx.PageOrientation.PORTRAIT;
-    const widthInTwips = Math.round(formatSettings.paperWidth * 567);  // cm to twips
-    const heightInTwips = Math.round(formatSettings.paperHeight * 567); // cm to twips
+    // Use the exact paper dimensions as specified by the user
+    const pageWidth = formatSettings.paperWidth;
+    const pageHeight = formatSettings.paperHeight;
+    
+    // Convert cm to twips (1 cm = 567 twips)
+    const widthInTwips = Math.round(pageWidth * 567);
+    const heightInTwips = Math.round(pageHeight * 567);
     
     const doc = new docx.Document({
         sections: [
@@ -966,15 +1002,14 @@ async function createWordDocument(customers) {
                 properties: {
                     page: {
                         size: {
-                            width: orientation === docx.PageOrientation.LANDSCAPE ? heightInTwips : widthInTwips,
-                            height: orientation === docx.PageOrientation.LANDSCAPE ? widthInTwips : heightInTwips,
-                            orientation: orientation
+                            width: widthInTwips,
+                            height: heightInTwips
                         },
                         margin: {
-                            top: Math.round(formatSettings.marginTop * 567),     // cm to twips
-                            right: Math.round(formatSettings.marginRight * 567), // cm to twips
-                            bottom: Math.round(formatSettings.marginBottom * 567), // cm to twips
-                            left: Math.round(formatSettings.marginLeft * 567)    // cm to twips
+                            top: Math.round(formatSettings.marginTop * 567),
+                            right: Math.round(formatSettings.marginRight * 567),
+                            bottom: Math.round(formatSettings.marginBottom * 567),
+                            left: Math.round(formatSettings.marginLeft * 567)
                         }
                     }
                 },
@@ -987,43 +1022,59 @@ async function createWordDocument(customers) {
 }
 
 async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
-    // Use format settings for dimensions and styling
-    const orientation = formatSettings.orientation === 'landscape' ? 'landscape' : 'portrait';
-    const width = orientation === 'landscape' ? 
-        Math.max(formatSettings.paperWidth, formatSettings.paperHeight) : 
-        Math.min(formatSettings.paperWidth, formatSettings.paperHeight);
-    const height = orientation === 'landscape' ? 
-        Math.min(formatSettings.paperWidth, formatSettings.paperHeight) : 
-        Math.max(formatSettings.paperWidth, formatSettings.paperHeight);
+    // Use the exact paper dimensions as specified by the user
+    const pageWidth = formatSettings.paperWidth;
+    const pageHeight = formatSettings.paperHeight;
     
-    // Calculate content dimensions after margins
-    const contentWidth = width - formatSettings.marginLeft - formatSettings.marginRight;
-    const contentHeight = height - formatSettings.marginTop - formatSettings.marginBottom;
-    
-    // Create HTML content for PDF generation
+    // Create HTML content for PDF generation with print-specific styles
     let htmlContent = `
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
+        <title>JD Sons Customer Documents</title>
         <style>
             @page {
-                size: ${width}cm ${height}cm ${orientation};
-                margin: ${formatSettings.marginTop}cm ${formatSettings.marginRight}cm ${formatSettings.marginBottom}cm ${formatSettings.marginLeft}cm;
+                size: ${pageWidth}cm ${pageHeight}cm;
+                margin: 0;
             }
-            body {
+            @media print {
+                @page {
+                    size: ${pageWidth}cm ${pageHeight}cm;
+                    margin: 0;
+                }
+                body {
+                    -webkit-print-color-adjust: exact;
+                    color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+            }
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            html, body {
+                width: ${pageWidth}cm;
+                height: ${pageHeight}cm;
                 font-family: ${formatSettings.fontFamily};
                 margin: 0;
                 padding: 0;
                 font-size: ${formatSettings.bodyFontSize}px;
                 line-height: ${formatSettings.lineSpacing};
                 color: ${formatSettings.textColor};
+                background: white;
+                overflow: hidden;
             }
             .page {
-                width: ${contentWidth}cm;
-                height: ${contentHeight}cm;
+                width: ${pageWidth}cm;
+                height: ${pageHeight}cm;
+                padding: ${formatSettings.marginTop}cm ${formatSettings.marginRight}cm ${formatSettings.marginBottom}cm ${formatSettings.marginLeft}cm;
                 page-break-after: always;
-                padding: 0.05cm;
+                box-sizing: border-box;
+                overflow: hidden;
+                display: block;
+                position: relative;
             }
             .page:last-child {
                 page-break-after: avoid;
@@ -1033,35 +1084,47 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
                 color: ${formatSettings.headerColor};
                 font-size: ${formatSettings.headerFontSize}px;
                 margin-bottom: 0.6cm;
+                line-height: ${formatSettings.lineSpacing};
+                display: block;
             }
             .field-label {
                 font-weight: bold;
                 display: inline;
                 font-size: ${formatSettings.bodyFontSize}px;
+                color: ${formatSettings.textColor};
+                line-height: ${formatSettings.lineSpacing};
             }
             .field-value {
                 color: ${formatSettings.textColor};
                 display: inline;
                 font-size: ${formatSettings.bodyFontSize}px;
+                line-height: ${formatSettings.lineSpacing};
             }
             .field {
                 margin-bottom: 0.5cm;
                 line-height: ${formatSettings.lineSpacing};
+                display: block;
             }
             .divider {
                 border-top: 3px solid #666;
                 margin: 0.7cm 0;
+                width: 100%;
+                display: block;
             }
             .from-details {
                 color: ${formatSettings.companyColor};
                 font-weight: bold;
                 font-size: ${formatSettings.bodyFontSize}px;
                 margin-bottom: 0.4cm;
+                line-height: ${formatSettings.lineSpacing};
+                display: block;
             }
             .from-contact {
                 color: ${formatSettings.companyColor};
                 font-weight: bold;
                 font-size: ${Math.round(formatSettings.bodyFontSize * 0.95)}px;
+                line-height: ${formatSettings.lineSpacing};
+                display: block;
             }
         </style>
     </head>
@@ -1103,14 +1166,11 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
     printWindow.document.write(htmlContent);
     printWindow.document.close();
     
-    // Wait for content to load, then print
+    // Wait for content to load, then open print dialog
     setTimeout(() => {
         printWindow.focus();
         printWindow.print();
-        setTimeout(() => {
-            printWindow.close();
-        }, 1000);
-    }, 500);
+    }, 1000);
 }
 
 function downloadDocument(blob, filename) {
@@ -1151,21 +1211,38 @@ function updatePaperSize() {
 }
 
 function updateFormat() {
-    // Update format settings from form inputs
-    formatSettings.paperWidth = parseFloat(document.getElementById('paperWidth').value) || 7.75;
-    formatSettings.paperHeight = parseFloat(document.getElementById('paperHeight').value) || 12.5;
-    formatSettings.orientation = document.getElementById('orientation').value;
-    formatSettings.marginTop = parseFloat(document.getElementById('marginTop').value) || 0.2;
-    formatSettings.marginBottom = parseFloat(document.getElementById('marginBottom').value) || 0.2;
-    formatSettings.marginLeft = parseFloat(document.getElementById('marginLeft').value) || 0.2;
-    formatSettings.marginRight = parseFloat(document.getElementById('marginRight').value) || 0.2;
-    formatSettings.fontFamily = document.getElementById('fontFamily').value;
-    formatSettings.headerFontSize = parseInt(document.getElementById('headerFontSize').value) || 22;
-    formatSettings.bodyFontSize = parseInt(document.getElementById('bodyFontSize').value) || 20;
-    formatSettings.headerColor = document.getElementById('headerColor').value;
-    formatSettings.textColor = document.getElementById('textColor').value;
-    formatSettings.companyColor = document.getElementById('companyColor').value;
-    formatSettings.lineSpacing = document.getElementById('lineSpacing').value;
+    // Update format settings from form inputs - ensure we get current values
+    const paperWidthInput = document.getElementById('paperWidth');
+    const paperHeightInput = document.getElementById('paperHeight');
+    const marginTopInput = document.getElementById('marginTop');
+    const marginBottomInput = document.getElementById('marginBottom');
+    const marginLeftInput = document.getElementById('marginLeft');
+    const marginRightInput = document.getElementById('marginRight');
+    const fontFamilyInput = document.getElementById('fontFamily');
+    const headerFontSizeInput = document.getElementById('headerFontSize');
+    const bodyFontSizeInput = document.getElementById('bodyFontSize');
+    const headerColorInput = document.getElementById('headerColor');
+    const textColorInput = document.getElementById('textColor');
+    const companyColorInput = document.getElementById('companyColor');
+    const lineSpacingInput = document.getElementById('lineSpacing');
+    
+    // Update all format settings with current form values
+    if (paperWidthInput) formatSettings.paperWidth = parseFloat(paperWidthInput.value) || 7.75;
+    if (paperHeightInput) formatSettings.paperHeight = parseFloat(paperHeightInput.value) || 12.5;
+    if (marginTopInput) formatSettings.marginTop = parseFloat(marginTopInput.value) || 0.2;
+    if (marginBottomInput) formatSettings.marginBottom = parseFloat(marginBottomInput.value) || 0.2;
+    if (marginLeftInput) formatSettings.marginLeft = parseFloat(marginLeftInput.value) || 0.2;
+    if (marginRightInput) formatSettings.marginRight = parseFloat(marginRightInput.value) || 0.2;
+    if (fontFamilyInput) formatSettings.fontFamily = fontFamilyInput.value || 'Arial, sans-serif';
+    if (headerFontSizeInput) formatSettings.headerFontSize = parseInt(headerFontSizeInput.value) || 22;
+    if (bodyFontSizeInput) formatSettings.bodyFontSize = parseInt(bodyFontSizeInput.value) || 20;
+    if (headerColorInput) formatSettings.headerColor = headerColorInput.value || '#dc2626';
+    if (textColorInput) formatSettings.textColor = textColorInput.value || '#1f2937';
+    if (companyColorInput) formatSettings.companyColor = companyColorInput.value || '#2563eb';
+    if (lineSpacingInput) formatSettings.lineSpacing = lineSpacingInput.value || '1.2';
+    
+    // Log current settings for debugging
+    console.log('Format settings updated:', formatSettings);
     
     updatePreview();
 }
@@ -1175,19 +1252,20 @@ function updatePreview() {
     const previewContent = previewPage.querySelector('.preview-content');
     const previewSize = document.getElementById('previewSize');
     
-    // Calculate dimensions
-    const width = formatSettings.orientation === 'landscape' ? 
-        Math.max(formatSettings.paperWidth, formatSettings.paperHeight) : 
-        Math.min(formatSettings.paperWidth, formatSettings.paperHeight);
-    const height = formatSettings.orientation === 'landscape' ? 
-        Math.min(formatSettings.paperWidth, formatSettings.paperHeight) : 
-        Math.max(formatSettings.paperWidth, formatSettings.paperHeight);
+    if (!previewPage || !previewContent || !previewSize) {
+        console.log('Preview elements not found');
+        return;
+    }
     
-    // Update preview page size
-    previewPage.style.width = `${width}cm`;
-    previewPage.style.height = `${height}cm`;
+    // Use the exact paper dimensions as specified by the user - no swapping based on orientation
+    const pageWidth = formatSettings.paperWidth;
+    const pageHeight = formatSettings.paperHeight;
     
-    // Update content styling
+    // Update preview page size to match exactly
+    previewPage.style.width = `${pageWidth}cm`;
+    previewPage.style.height = `${pageHeight}cm`;
+    
+    // Update content styling to match exactly what will be generated
     previewContent.style.fontFamily = formatSettings.fontFamily;
     previewContent.style.fontSize = `${formatSettings.bodyFontSize}px`;
     previewContent.style.lineHeight = formatSettings.lineSpacing;
@@ -1196,17 +1274,53 @@ function updatePreview() {
     
     // Update header styling
     const header = previewContent.querySelector('.preview-header');
-    header.style.fontSize = `${formatSettings.headerFontSize}px`;
-    header.style.color = formatSettings.headerColor;
+    if (header) {
+        header.style.fontSize = `${formatSettings.headerFontSize}px`;
+        header.style.color = formatSettings.headerColor;
+        header.style.lineHeight = formatSettings.lineSpacing;
+    }
+    
+    // Update field labels styling
+    const labels = previewContent.querySelectorAll('.preview-label');
+    labels.forEach(label => {
+        label.style.fontSize = `${formatSettings.bodyFontSize}px`;
+        label.style.color = formatSettings.textColor;
+        label.style.lineHeight = formatSettings.lineSpacing;
+    });
+    
+    // Update field values styling
+    const values = previewContent.querySelectorAll('.preview-value');
+    values.forEach(value => {
+        value.style.fontSize = `${formatSettings.bodyFontSize}px`;
+        value.style.color = formatSettings.textColor;
+        value.style.lineHeight = formatSettings.lineSpacing;
+    });
     
     // Update company info styling
     const company = previewContent.querySelector('.preview-company');
     const companyContact = previewContent.querySelector('.preview-company-contact');
-    company.style.color = formatSettings.companyColor;
-    companyContact.style.color = formatSettings.companyColor;
+    if (company) {
+        company.style.color = formatSettings.companyColor;
+        company.style.fontSize = `${formatSettings.bodyFontSize}px`;
+        company.style.lineHeight = formatSettings.lineSpacing;
+    }
+    if (companyContact) {
+        companyContact.style.color = formatSettings.companyColor;
+        companyContact.style.fontSize = `${Math.round(formatSettings.bodyFontSize * 0.95)}px`;
+        companyContact.style.lineHeight = formatSettings.lineSpacing;
+    }
+    
+    // Update preview fields to match document structure
+    const fields = previewContent.querySelectorAll('.preview-field');
+    fields.forEach(field => {
+        field.style.lineHeight = formatSettings.lineSpacing;
+        field.style.marginBottom = '0.5cm';
+    });
     
     // Update size display
-    previewSize.textContent = `${width.toFixed(1)}cm × ${height.toFixed(1)}cm`;
+    previewSize.textContent = `${pageWidth.toFixed(1)}cm × ${pageHeight.toFixed(1)}cm`;
+    
+    console.log(`Preview updated: ${pageWidth.toFixed(1)}cm × ${pageHeight.toFixed(1)}cm`);
 }
 
 function resetToDefaults() {
@@ -1214,7 +1328,6 @@ function resetToDefaults() {
     formatSettings = {
         paperWidth: 7.75,
         paperHeight: 12.5,
-        orientation: 'portrait',
         marginTop: 0.2,
         marginBottom: 0.2,
         marginLeft: 0.2,
@@ -1232,7 +1345,6 @@ function resetToDefaults() {
     document.getElementById('paperSizeSelect').value = 'receipt';
     document.getElementById('paperWidth').value = formatSettings.paperWidth;
     document.getElementById('paperHeight').value = formatSettings.paperHeight;
-    document.getElementById('orientation').value = formatSettings.orientation;
     document.getElementById('marginTop').value = formatSettings.marginTop;
     document.getElementById('marginBottom').value = formatSettings.marginBottom;
     document.getElementById('marginLeft').value = formatSettings.marginLeft;
@@ -1253,6 +1365,8 @@ function resetToDefaults() {
 
 function saveFormatSettings() {
     try {
+        // Make sure we have the latest format settings before saving
+        updateFormat();
         localStorage.setItem('jdSonsFormatSettings', JSON.stringify(formatSettings));
         alert('✅ Format settings have been saved successfully!');
     } catch (error) {
@@ -1266,32 +1380,65 @@ function loadFormatSettings() {
         const saved = localStorage.getItem('jdSonsFormatSettings');
         if (saved) {
             const savedSettings = JSON.parse(saved);
+            // Merge saved settings with current formatSettings to ensure all properties exist
             formatSettings = { ...formatSettings, ...savedSettings };
             
             // Update form inputs with loaded settings
-            document.getElementById('paperWidth').value = formatSettings.paperWidth;
-            document.getElementById('paperHeight').value = formatSettings.paperHeight;
-            document.getElementById('orientation').value = formatSettings.orientation;
-            document.getElementById('marginTop').value = formatSettings.marginTop;
-            document.getElementById('marginBottom').value = formatSettings.marginBottom;
-            document.getElementById('marginLeft').value = formatSettings.marginLeft;
-            document.getElementById('marginRight').value = formatSettings.marginRight;
-            document.getElementById('fontFamily').value = formatSettings.fontFamily;
-            document.getElementById('headerFontSize').value = formatSettings.headerFontSize;
-            document.getElementById('bodyFontSize').value = formatSettings.bodyFontSize;
-            document.getElementById('headerColor').value = formatSettings.headerColor;
-            document.getElementById('textColor').value = formatSettings.textColor;
-            document.getElementById('companyColor').value = formatSettings.companyColor;
-            document.getElementById('lineSpacing').value = formatSettings.lineSpacing;
-            
-            // Set paper size selector
-            for (const [key, size] of Object.entries(paperSizes)) {
-                if (Math.abs(size.width - formatSettings.paperWidth) < 0.1 && 
-                    Math.abs(size.height - formatSettings.paperHeight) < 0.1) {
-                    document.getElementById('paperSizeSelect').value = key;
-                    break;
-                }
+            if (document.getElementById('paperWidth')) {
+                document.getElementById('paperWidth').value = formatSettings.paperWidth;
             }
+            if (document.getElementById('paperHeight')) {
+                document.getElementById('paperHeight').value = formatSettings.paperHeight;
+            }
+            if (document.getElementById('marginTop')) {
+                document.getElementById('marginTop').value = formatSettings.marginTop;
+            }
+            if (document.getElementById('marginBottom')) {
+                document.getElementById('marginBottom').value = formatSettings.marginBottom;
+            }
+            if (document.getElementById('marginLeft')) {
+                document.getElementById('marginLeft').value = formatSettings.marginLeft;
+            }
+            if (document.getElementById('marginRight')) {
+                document.getElementById('marginRight').value = formatSettings.marginRight;
+            }
+            if (document.getElementById('fontFamily')) {
+                document.getElementById('fontFamily').value = formatSettings.fontFamily;
+            }
+            if (document.getElementById('headerFontSize')) {
+                document.getElementById('headerFontSize').value = formatSettings.headerFontSize;
+            }
+            if (document.getElementById('bodyFontSize')) {
+                document.getElementById('bodyFontSize').value = formatSettings.bodyFontSize;
+            }
+            if (document.getElementById('headerColor')) {
+                document.getElementById('headerColor').value = formatSettings.headerColor;
+            }
+            if (document.getElementById('textColor')) {
+                document.getElementById('textColor').value = formatSettings.textColor;
+            }
+            if (document.getElementById('companyColor')) {
+                document.getElementById('companyColor').value = formatSettings.companyColor;
+            }
+            if (document.getElementById('lineSpacing')) {
+                document.getElementById('lineSpacing').value = formatSettings.lineSpacing;
+            }
+            
+            // Set paper size selector based on current dimensions
+            const paperSizeSelect = document.getElementById('paperSizeSelect');
+            if (paperSizeSelect) {
+                let matchedSize = 'custom';
+                for (const [key, size] of Object.entries(paperSizes)) {
+                    if (Math.abs(size.width - formatSettings.paperWidth) < 0.1 && 
+                        Math.abs(size.height - formatSettings.paperHeight) < 0.1) {
+                        matchedSize = key;
+                        break;
+                    }
+                }
+                paperSizeSelect.value = matchedSize;
+            }
+            
+            console.log('Format settings loaded successfully:', formatSettings);
         }
     } catch (error) {
         console.error('Error loading format settings:', error);
