@@ -1,9 +1,39 @@
 let customerData = [];
 let currentDataSource = 'file'; // 'file' or 'sheets'
 
+// Format settings with defaults
+let formatSettings = {
+    paperWidth: 7.75,
+    paperHeight: 12.5,
+    orientation: 'portrait',
+    marginTop: 0.2,
+    marginBottom: 0.2,
+    marginLeft: 0.2,
+    marginRight: 0.2,
+    fontFamily: 'Arial, sans-serif',
+    headerFontSize: 22,
+    bodyFontSize: 20,
+    headerColor: '#dc2626',
+    textColor: '#1f2937',
+    companyColor: '#2563eb',
+    lineSpacing: '1.2'
+};
+
+// Paper size presets
+const paperSizes = {
+    custom: { width: 7.75, height: 12.5 },
+    a4: { width: 21.0, height: 29.7 },
+    a5: { width: 14.8, height: 21.0 },
+    a6: { width: 10.5, height: 14.8 },
+    receipt: { width: 7.75, height: 12.5 },
+    business: { width: 8.5, height: 5.5 }
+};
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
+    loadFormatSettings();
+    updatePreview();
 });
 
 function initializeEventListeners() {
@@ -55,9 +85,13 @@ function switchToGoogleSheets() {
 
 function resetSections() {
     document.getElementById('fileInfo').style.display = 'none';
+    document.getElementById('formatCustomization').style.display = 'none'; // Hide format customization
     document.getElementById('selectionSection').style.display = 'none';
     document.getElementById('generateSection').style.display = 'none';
+    document.getElementById('previewSection').style.display = 'none'; // Hide preview section
     document.getElementById('statusSection').style.display = 'none';
+    document.getElementById('customerTable').style.display = 'none'; // Hide customer table
+    document.getElementById('emptyState').style.display = 'block'; // Show empty state
     customerData = [];
 }
 
@@ -531,9 +565,13 @@ function displayFileInfo(filename, count, sourceType) {
         `;
     }
     
+    // Hide empty state and show content sections
+    document.getElementById('emptyState').style.display = 'none';
     fileInfo.style.display = 'block';
+    document.getElementById('formatCustomization').style.display = 'block'; // Show format customization
     document.getElementById('selectionSection').style.display = 'block';
     document.getElementById('generateSection').style.display = 'block';
+    document.getElementById('previewSection').style.display = 'block'; // Show preview section
     
     // Show customer table
     populateCustomerTable();
@@ -762,6 +800,13 @@ async function generateDocument(format = 'word') {
         
         hideStatus();
         
+        // Show success message with format info
+        const formatInfo = `📄 Document generated successfully!\n` +
+                          `📏 Format: ${formatSettings.paperWidth}×${formatSettings.paperHeight}cm (${formatSettings.orientation})\n` +
+                          `🎨 Font: ${formatSettings.fontFamily.split(',')[0]} - ${formatSettings.bodyFontSize}px\n` +
+                          `👥 Customers: ${selectedCustomers.length}`;
+        alert(formatInfo);
+        
     } catch (error) {
         console.error(`Error generating ${format} document:`, error);
         alert(`Error generating ${format.toUpperCase()} document. Please try again.`);
@@ -771,6 +816,15 @@ async function generateDocument(format = 'word') {
 
 async function createWordDocument(customers) {
     const children = [];
+    
+    // Convert hex colors to docx format (remove #)
+    const headerColor = formatSettings.headerColor.replace('#', '');
+    const textColor = formatSettings.textColor.replace('#', '');
+    const companyColor = formatSettings.companyColor.replace('#', '');
+    
+    // Convert font sizes to Word format (multiply by 2 for half-points)
+    const headerSize = formatSettings.headerFontSize * 2;
+    const bodySize = formatSettings.bodyFontSize * 2;
     
     for (let i = 0; i < customers.length; i++) {
         const customer = customers[i];
@@ -783,11 +837,12 @@ async function createWordDocument(customers) {
                     new docx.TextRun({
                         text: "Customer Details:",
                         bold: true,
-                        size: 44,
-                        color: "dc2626"
+                        size: headerSize,
+                        color: headerColor,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     })
                 ],
-                spacing: { after: 600 }
+                spacing: { after: 600, line: Math.round(parseFloat(formatSettings.lineSpacing) * 240) }
             }),
             
             // Customer Name
@@ -796,15 +851,17 @@ async function createWordDocument(customers) {
                     new docx.TextRun({
                         text: "Customer Name: ",
                         bold: true,
-                        size: 40
+                        size: bodySize,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     }),
                     new docx.TextRun({
                         text: customer.customerName,
-                        size: 40,
-                        color: "1f2937"
+                        size: bodySize,
+                        color: textColor,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     })
                 ],
-                spacing: { after: 500 }
+                spacing: { after: 500, line: Math.round(parseFloat(formatSettings.lineSpacing) * 240) }
             }),
             
             // Address
@@ -813,15 +870,17 @@ async function createWordDocument(customers) {
                     new docx.TextRun({
                         text: "Address: ",
                         bold: true,
-                        size: 40
+                        size: bodySize,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     }),
                     new docx.TextRun({
                         text: customer.address,
-                        size: 40,
-                        color: "1f2937"
+                        size: bodySize,
+                        color: textColor,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     })
                 ],
-                spacing: { after: 500 }
+                spacing: { after: 500, line: Math.round(parseFloat(formatSettings.lineSpacing) * 240) }
             }),
             
             // Contact Number
@@ -830,15 +889,17 @@ async function createWordDocument(customers) {
                     new docx.TextRun({
                         text: "Contact Number: ",
                         bold: true,
-                        size: 40
+                        size: bodySize,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     }),
                     new docx.TextRun({
                         text: customer.contactNumber.toString(),
-                        size: 40,
-                        color: "1f2937"
+                        size: bodySize,
+                        color: textColor,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     })
                 ],
-                spacing: { after: 700 }
+                spacing: { after: 700, line: Math.round(parseFloat(formatSettings.lineSpacing) * 240) }
             }),
             
             // Divider line
@@ -847,7 +908,8 @@ async function createWordDocument(customers) {
                     new docx.TextRun({
                         text: "─".repeat(40),
                         color: "666666",
-                        size: 32
+                        size: Math.round(bodySize * 0.8),
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     })
                 ],
                 spacing: { after: 600 }
@@ -859,22 +921,24 @@ async function createWordDocument(customers) {
                     new docx.TextRun({
                         text: "From: Jemish (JD Jewellery)",
                         bold: true,
-                        size: 40,
-                        color: "2563eb"
+                        size: bodySize,
+                        color: companyColor,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     })
                 ],
-                spacing: { after: 400 }
+                spacing: { after: 400, line: Math.round(parseFloat(formatSettings.lineSpacing) * 240) }
             }),
             new docx.Paragraph({
                 children: [
                     new docx.TextRun({
                         text: "Contact Number: 9773046615",
                         bold: true,
-                        size: 38,
-                        color: "2563eb"
+                        size: Math.round(bodySize * 0.95),
+                        color: companyColor,
+                        font: formatSettings.fontFamily.split(',')[0].trim()
                     })
                 ],
-                spacing: { after: 500 }
+                spacing: { after: 500, line: Math.round(parseFloat(formatSettings.lineSpacing) * 240) }
             })
         ];
         
@@ -891,9 +955,10 @@ async function createWordDocument(customers) {
         }
     }
     
-    // Convert cm to twips (1 cm = 567 twips)
-    const widthInTwips = Math.round(7.75 * 567);  // 7.75 cm
-    const heightInTwips = Math.round(12.5 * 567); // 12.5 cm
+    // Use format settings for page dimensions and margins
+    const orientation = formatSettings.orientation === 'landscape' ? docx.PageOrientation.LANDSCAPE : docx.PageOrientation.PORTRAIT;
+    const widthInTwips = Math.round(formatSettings.paperWidth * 567);  // cm to twips
+    const heightInTwips = Math.round(formatSettings.paperHeight * 567); // cm to twips
     
     const doc = new docx.Document({
         sections: [
@@ -901,15 +966,15 @@ async function createWordDocument(customers) {
                 properties: {
                     page: {
                         size: {
-                            width: widthInTwips,
-                            height: heightInTwips,
-                            orientation: docx.PageOrientation.PORTRAIT
+                            width: orientation === docx.PageOrientation.LANDSCAPE ? heightInTwips : widthInTwips,
+                            height: orientation === docx.PageOrientation.LANDSCAPE ? widthInTwips : heightInTwips,
+                            orientation: orientation
                         },
                         margin: {
-                            top: 288,    // 0.2 inch (even smaller margins)
-                            right: 288,  // 0.2 inch
-                            bottom: 288, // 0.2 inch
-                            left: 288    // 0.2 inch
+                            top: Math.round(formatSettings.marginTop * 567),     // cm to twips
+                            right: Math.round(formatSettings.marginRight * 567), // cm to twips
+                            bottom: Math.round(formatSettings.marginBottom * 567), // cm to twips
+                            left: Math.round(formatSettings.marginLeft * 567)    // cm to twips
                         }
                     }
                 },
@@ -922,6 +987,19 @@ async function createWordDocument(customers) {
 }
 
 async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
+    // Use format settings for dimensions and styling
+    const orientation = formatSettings.orientation === 'landscape' ? 'landscape' : 'portrait';
+    const width = orientation === 'landscape' ? 
+        Math.max(formatSettings.paperWidth, formatSettings.paperHeight) : 
+        Math.min(formatSettings.paperWidth, formatSettings.paperHeight);
+    const height = orientation === 'landscape' ? 
+        Math.min(formatSettings.paperWidth, formatSettings.paperHeight) : 
+        Math.max(formatSettings.paperWidth, formatSettings.paperHeight);
+    
+    // Calculate content dimensions after margins
+    const contentWidth = width - formatSettings.marginLeft - formatSettings.marginRight;
+    const contentHeight = height - formatSettings.marginTop - formatSettings.marginBottom;
+    
     // Create HTML content for PDF generation
     let htmlContent = `
     <!DOCTYPE html>
@@ -930,19 +1008,20 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
         <meta charset="UTF-8">
         <style>
             @page {
-                size: 7.75cm 12.5cm;
-                margin: 0.2cm;
+                size: ${width}cm ${height}cm ${orientation};
+                margin: ${formatSettings.marginTop}cm ${formatSettings.marginRight}cm ${formatSettings.marginBottom}cm ${formatSettings.marginLeft}cm;
             }
             body {
-                font-family: Arial, sans-serif;
+                font-family: ${formatSettings.fontFamily};
                 margin: 0;
                 padding: 0;
-                font-size: 20px;
-                line-height: 1.3;
+                font-size: ${formatSettings.bodyFontSize}px;
+                line-height: ${formatSettings.lineSpacing};
+                color: ${formatSettings.textColor};
             }
             .page {
-                width: 7.15cm;
-                height: 12.1cm;
+                width: ${contentWidth}cm;
+                height: ${contentHeight}cm;
                 page-break-after: always;
                 padding: 0.05cm;
             }
@@ -951,38 +1030,38 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
             }
             .customer-header {
                 font-weight: bold;
-                color: #dc2626;
-                font-size: 22px;
+                color: ${formatSettings.headerColor};
+                font-size: ${formatSettings.headerFontSize}px;
                 margin-bottom: 0.6cm;
             }
             .field-label {
                 font-weight: bold;
                 display: inline;
-                font-size: 20px;
+                font-size: ${formatSettings.bodyFontSize}px;
             }
             .field-value {
-                color: #1f2937;
+                color: ${formatSettings.textColor};
                 display: inline;
-                font-size: 20px;
+                font-size: ${formatSettings.bodyFontSize}px;
             }
             .field {
                 margin-bottom: 0.5cm;
-                line-height: 1.2;
+                line-height: ${formatSettings.lineSpacing};
             }
             .divider {
                 border-top: 3px solid #666;
                 margin: 0.7cm 0;
             }
             .from-details {
-                color: #2563eb;
+                color: ${formatSettings.companyColor};
                 font-weight: bold;
-                font-size: 20px;
+                font-size: ${formatSettings.bodyFontSize}px;
                 margin-bottom: 0.4cm;
             }
             .from-contact {
-                color: #2563eb;
+                color: ${formatSettings.companyColor};
                 font-weight: bold;
-                font-size: 19px;
+                font-size: ${Math.round(formatSettings.bodyFontSize * 0.95)}px;
             }
         </style>
     </head>
@@ -1045,4 +1124,179 @@ function downloadDocument(blob, filename) {
     document.body.removeChild(a);
     
     URL.revokeObjectURL(url);
+}
+
+// Format customization functions
+function switchFormatTab(tabName) {
+    // Remove active class from all tabs and contents
+    document.querySelectorAll('.format-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.format-tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to selected tab and content
+    document.querySelector(`[onclick="switchFormatTab('${tabName}')"]`).classList.add('active');
+    document.getElementById(tabName + 'Tab').classList.add('active');
+}
+
+function updatePaperSize() {
+    const sizeSelect = document.getElementById('paperSizeSelect');
+    const selectedSize = sizeSelect.value;
+    
+    if (selectedSize !== 'custom' && paperSizes[selectedSize]) {
+        document.getElementById('paperWidth').value = paperSizes[selectedSize].width;
+        document.getElementById('paperHeight').value = paperSizes[selectedSize].height;
+        formatSettings.paperWidth = paperSizes[selectedSize].width;
+        formatSettings.paperHeight = paperSizes[selectedSize].height;
+        updateFormat();
+    }
+}
+
+function updateFormat() {
+    // Update format settings from form inputs
+    formatSettings.paperWidth = parseFloat(document.getElementById('paperWidth').value) || 7.75;
+    formatSettings.paperHeight = parseFloat(document.getElementById('paperHeight').value) || 12.5;
+    formatSettings.orientation = document.getElementById('orientation').value;
+    formatSettings.marginTop = parseFloat(document.getElementById('marginTop').value) || 0.2;
+    formatSettings.marginBottom = parseFloat(document.getElementById('marginBottom').value) || 0.2;
+    formatSettings.marginLeft = parseFloat(document.getElementById('marginLeft').value) || 0.2;
+    formatSettings.marginRight = parseFloat(document.getElementById('marginRight').value) || 0.2;
+    formatSettings.fontFamily = document.getElementById('fontFamily').value;
+    formatSettings.headerFontSize = parseInt(document.getElementById('headerFontSize').value) || 22;
+    formatSettings.bodyFontSize = parseInt(document.getElementById('bodyFontSize').value) || 20;
+    formatSettings.headerColor = document.getElementById('headerColor').value;
+    formatSettings.textColor = document.getElementById('textColor').value;
+    formatSettings.companyColor = document.getElementById('companyColor').value;
+    formatSettings.lineSpacing = document.getElementById('lineSpacing').value;
+    
+    updatePreview();
+}
+
+function updatePreview() {
+    const previewPage = document.getElementById('previewPage');
+    const previewContent = previewPage.querySelector('.preview-content');
+    const previewSize = document.getElementById('previewSize');
+    
+    // Calculate dimensions
+    const width = formatSettings.orientation === 'landscape' ? 
+        Math.max(formatSettings.paperWidth, formatSettings.paperHeight) : 
+        Math.min(formatSettings.paperWidth, formatSettings.paperHeight);
+    const height = formatSettings.orientation === 'landscape' ? 
+        Math.min(formatSettings.paperWidth, formatSettings.paperHeight) : 
+        Math.max(formatSettings.paperWidth, formatSettings.paperHeight);
+    
+    // Update preview page size
+    previewPage.style.width = `${width}cm`;
+    previewPage.style.height = `${height}cm`;
+    
+    // Update content styling
+    previewContent.style.fontFamily = formatSettings.fontFamily;
+    previewContent.style.fontSize = `${formatSettings.bodyFontSize}px`;
+    previewContent.style.lineHeight = formatSettings.lineSpacing;
+    previewContent.style.color = formatSettings.textColor;
+    previewContent.style.padding = `${formatSettings.marginTop}cm ${formatSettings.marginRight}cm ${formatSettings.marginBottom}cm ${formatSettings.marginLeft}cm`;
+    
+    // Update header styling
+    const header = previewContent.querySelector('.preview-header');
+    header.style.fontSize = `${formatSettings.headerFontSize}px`;
+    header.style.color = formatSettings.headerColor;
+    
+    // Update company info styling
+    const company = previewContent.querySelector('.preview-company');
+    const companyContact = previewContent.querySelector('.preview-company-contact');
+    company.style.color = formatSettings.companyColor;
+    companyContact.style.color = formatSettings.companyColor;
+    
+    // Update size display
+    previewSize.textContent = `${width.toFixed(1)}cm × ${height.toFixed(1)}cm`;
+}
+
+function resetToDefaults() {
+    // Reset to default values
+    formatSettings = {
+        paperWidth: 7.75,
+        paperHeight: 12.5,
+        orientation: 'portrait',
+        marginTop: 0.2,
+        marginBottom: 0.2,
+        marginLeft: 0.2,
+        marginRight: 0.2,
+        fontFamily: 'Arial, sans-serif',
+        headerFontSize: 22,
+        bodyFontSize: 20,
+        headerColor: '#dc2626',
+        textColor: '#1f2937',
+        companyColor: '#2563eb',
+        lineSpacing: '1.2'
+    };
+    
+    // Update form inputs
+    document.getElementById('paperSizeSelect').value = 'receipt';
+    document.getElementById('paperWidth').value = formatSettings.paperWidth;
+    document.getElementById('paperHeight').value = formatSettings.paperHeight;
+    document.getElementById('orientation').value = formatSettings.orientation;
+    document.getElementById('marginTop').value = formatSettings.marginTop;
+    document.getElementById('marginBottom').value = formatSettings.marginBottom;
+    document.getElementById('marginLeft').value = formatSettings.marginLeft;
+    document.getElementById('marginRight').value = formatSettings.marginRight;
+    document.getElementById('fontFamily').value = formatSettings.fontFamily;
+    document.getElementById('headerFontSize').value = formatSettings.headerFontSize;
+    document.getElementById('bodyFontSize').value = formatSettings.bodyFontSize;
+    document.getElementById('headerColor').value = formatSettings.headerColor;
+    document.getElementById('textColor').value = formatSettings.textColor;
+    document.getElementById('companyColor').value = formatSettings.companyColor;
+    document.getElementById('lineSpacing').value = formatSettings.lineSpacing;
+    
+    updatePreview();
+    
+    // Show confirmation
+    alert('✅ Format settings have been reset to defaults!');
+}
+
+function saveFormatSettings() {
+    try {
+        localStorage.setItem('jdSonsFormatSettings', JSON.stringify(formatSettings));
+        alert('✅ Format settings have been saved successfully!');
+    } catch (error) {
+        console.error('Error saving format settings:', error);
+        alert('❌ Error saving format settings. Please try again.');
+    }
+}
+
+function loadFormatSettings() {
+    try {
+        const saved = localStorage.getItem('jdSonsFormatSettings');
+        if (saved) {
+            const savedSettings = JSON.parse(saved);
+            formatSettings = { ...formatSettings, ...savedSettings };
+            
+            // Update form inputs with loaded settings
+            document.getElementById('paperWidth').value = formatSettings.paperWidth;
+            document.getElementById('paperHeight').value = formatSettings.paperHeight;
+            document.getElementById('orientation').value = formatSettings.orientation;
+            document.getElementById('marginTop').value = formatSettings.marginTop;
+            document.getElementById('marginBottom').value = formatSettings.marginBottom;
+            document.getElementById('marginLeft').value = formatSettings.marginLeft;
+            document.getElementById('marginRight').value = formatSettings.marginRight;
+            document.getElementById('fontFamily').value = formatSettings.fontFamily;
+            document.getElementById('headerFontSize').value = formatSettings.headerFontSize;
+            document.getElementById('bodyFontSize').value = formatSettings.bodyFontSize;
+            document.getElementById('headerColor').value = formatSettings.headerColor;
+            document.getElementById('textColor').value = formatSettings.textColor;
+            document.getElementById('companyColor').value = formatSettings.companyColor;
+            document.getElementById('lineSpacing').value = formatSettings.lineSpacing;
+            
+            // Set paper size selector
+            for (const [key, size] of Object.entries(paperSizes)) {
+                if (Math.abs(size.width - formatSettings.paperWidth) < 0.1 && 
+                    Math.abs(size.height - formatSettings.paperHeight) < 0.1) {
+                    document.getElementById('paperSizeSelect').value = key;
+                    break;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading format settings:', error);
+    }
+    
+    // Update preview with loaded or default settings
+    updatePreview();
 } 
