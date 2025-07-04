@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JD Sons Flexible Document Generator</title>
+    <link rel="stylesheet" href="flexible-styles.css">
+    <link rel="stylesheet" href="landing-styles.css">
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx@8.2.2/build/index.min.js"></script>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h2>🏪 JD Sons Document Generator</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">🏠 Home</a></li>
+                <li><a href="dynamic-generator.html" class="nav-link">📊 Customer Orders</a></li>
+                <li><a href="flexible-generator.html" class="nav-link active">🎯 Flexible Generator</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>🎯 Flexible Document Generator</h1>
+            <p>Choose any columns from your data and create custom documents</p>
+        </header>
+
+        <main class="main-layout">
+            <!-- Left Side: Data Source and Column Selection -->
+            <div class="left-panel">
+                <!-- Data Source Selection -->
+                <section class="data-source-section">
+                    <h2>📊 Choose Data Source</h2>
+                    <div class="source-options">
+                        <button class="source-btn active" id="fileUploadBtn" onclick="switchToFileUpload()">
+                            📁 Upload Excel File
+                        </button>
+                        <button class="source-btn" id="googleSheetsBtn" onclick="switchToGoogleSheets()">
+                            📊 Google Sheets Link
+                        </button>
+                    </div>
+                </section>
+
+                <!-- File Upload Section -->
+                <section class="upload-section" id="fileUploadSection">
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <div class="upload-icon">📊</div>
+                            <h3>Drag & Drop Excel File</h3>
+                            <p>or click to browse</p>
+                            <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Google Sheets Section -->
+                <section class="google-sheets-section" id="googleSheetsSection" style="display: none;">
+                    <div class="sheets-input-area">
+                        <h3>📊 Google Sheets Integration</h3>
+                        <p>Enter your Google Sheets shareable link below:</p>
+                        <div class="url-input-container">
+                            <input type="url" id="sheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit..." class="sheets-url-input">
+                            <button id="loadSheetsBtn" class="load-sheets-btn">Load Data</button>
+                        </div>
+                        <div class="sheets-help">
+                            <details>
+                                <summary>📋 How to set up Google Sheets access?</summary>
+                                <div class="help-content">
+                                    <h4>Step 1: Publish to Web</h4>
+                                    <ol>
+                                        <li>Open your Google Sheets document</li>
+                                        <li>Go to <strong>File → Share → Publish to web</strong></li>
+                                        <li>Select <strong>"Entire Document"</strong></li>
+                                        <li>Choose <strong>"Comma-separated values (.csv)"</strong></li>
+                                        <li>Click <strong>"Publish"</strong></li>
+                                        <li>Confirm by clicking <strong>"OK"</strong></li>
+                                    </ol>
+                                    
+                                    <h4>Step 2: Make it Publicly Accessible</h4>
+                                    <ol>
+                                        <li>Click <strong>"Share"</strong> button (top right)</li>
+                                        <li>Change access to <strong>"Anyone with the link can view"</strong></li>
+                                        <li>Copy the share link and paste it above</li>
+                                    </ol>
+                                    
+                                    <div class="help-note">
+                                        <p><strong>⚠️ Important:</strong> Both steps are required for the integration to work properly!</p>
+                                        <p><strong>💡 Alternative:</strong> If you're having issues, you can download your sheet as Excel (.xlsx) and use the file upload option instead.</p>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Information Section -->
+                <section class="data-info-section" id="fileInfo" style="display: none;">
+                    <h3>📋 Data Information</h3>
+                    <div class="info-content">
+                        <p id="fileDetails"></p>
+                        <div class="columns-overview" id="columnsFound"></div>
+                    </div>
+                </section>
+
+                <!-- Column Selection Section -->
+                <section class="column-selection-section" id="columnSelection" style="display: none;">
+                    <h3>🎯 Select Fields for Document</h3>
+                    <p class="section-description">Choose which columns from your data to include in the generated documents:</p>
+                    
+                    <div class="column-selection-container">
+                        <div class="column-actions">
+                            <button class="action-btn select-all" onclick="selectAllColumns()">✅ Select All</button>
+                            <button class="action-btn clear-all" onclick="clearAllColumns()">❌ Clear All</button>
+                        </div>
+                        
+                        <div class="column-list" id="columnList">
+                            <!-- Columns will be populated dynamically -->
+                        </div>
+                        
+                        <div class="selected-preview" id="selectedPreview">
+                            <h4>Selected Fields:</h4>
+                            <div class="selected-fields" id="selectedFields">
+                                <p class="no-selection">No fields selected</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Format Customization Panel -->
+                <section class="format-customization-section" id="formatCustomization" style="display: none;">
+                    <h3>🎨 Document Format Settings</h3>
+                    
+                    <div class="format-tabs">
+                        <button class="format-tab active" onclick="switchFormatTab('size')">📏 Size & Layout</button>
+                        <button class="format-tab" onclick="switchFormatTab('style')">🎨 Style</button>
+                    </div>
+
+                    <!-- Size & Layout Tab -->
+                    <div class="format-tab-content active" id="sizeTab">
+                        <div class="format-group">
+                            <label>Paper Size:</label>
+                            <select id="paperSizeSelect" onchange="updatePaperSize()">
+                                <option value="custom">Custom Size</option>
+                                <option value="a4" selected>A4 (21.0 × 29.7 cm)</option>
+                                <option value="a5">A5 (14.8 × 21.0 cm)</option>
+                                <option value="a6">A6 (10.5 × 14.8 cm)</option>
+                                <option value="receipt">Receipt (7.75 × 12.5 cm)</option>
+                                <option value="business">Business Card (8.5 × 5.5 cm)</option>
+                            </select>
+                        </div>
+
+                        <div class="format-row">
+                            <div class="format-group">
+                                <label>Width (cm):</label>
+                                <input type="number" id="paperWidth" value="21.0" min="1" max="30" step="0.1" onchange="updateFormat()">
+                            </div>
+                            <div class="format-group">
+                                <label>Height (cm):</label>
+                                <input type="number" id="paperHeight" value="29.7" min="1" max="40" step="0.1" onchange="updateFormat()">
+                            </div>
+                        </div>
+
+                        <div class="format-row">
+                            <div class="format-group">
+                                <label>Margin Top (cm):</label>
+                                <input type="number" id="marginTop" value="2.0" min="0" max="5" step="0.1" onchange="updateFormat()">
+                            </div>
+                            <div class="format-group">
+                                <label>Margin Bottom (cm):</label>
+                                <input type="number" id="marginBottom" value="2.0" min="0" max="5" step="0.1" onchange="updateFormat()">
+                            </div>
+                        </div>
+
+                        <div class="format-row">
+                            <div class="format-group">
+                                <label>Margin Left (cm):</label>
+                                <input type="number" id="marginLeft" value="2.0" min="0" max="5" step="0.1" onchange="updateFormat()">
+                            </div>
+                            <div class="format-group">
+                                <label>Margin Right (cm):</label>
+                                <input type="number" id="marginRight" value="2.0" min="0" max="5" step="0.1" onchange="updateFormat()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Style Tab -->
+                    <div class="format-tab-content" id="styleTab">
+                        <div class="format-group">
+                            <label>Font Family:</label>
+                            <select id="fontFamily" onchange="updateFormat()">
+                                <option value="Arial, sans-serif" selected>Arial</option>
+                                <option value="Times New Roman, serif">Times New Roman</option>
+                                <option value="Helvetica, sans-serif">Helvetica</option>
+                                <option value="Calibri, sans-serif">Calibri</option>
+                                <option value="Georgia, serif">Georgia</option>
+                            </select>
+                        </div>
+
+                        <div class="format-row">
+                            <div class="format-group">
+                                <label>Header Font Size (px):</label>
+                                <input type="number" id="headerFontSize" value="18" min="10" max="40" onchange="updateFormat()">
+                            </div>
+                            <div class="format-group">
+                                <label>Body Font Size (px):</label>
+                                <input type="number" id="bodyFontSize" value="14" min="8" max="30" onchange="updateFormat()">
+                            </div>
+                        </div>
+
+                        <div class="format-group">
+                            <label>Header Color:</label>
+                            <input type="color" id="headerColor" value="#1f2937" onchange="updateFormat()">
+                        </div>
+
+                        <div class="format-group">
+                            <label>Text Color:</label>
+                            <input type="color" id="textColor" value="#374151" onchange="updateFormat()">
+                        </div>
+
+                        <div class="format-group">
+                            <label>Line Spacing:</label>
+                            <select id="lineSpacing" onchange="updateFormat()">
+                                <option value="1.0">Single</option>
+                                <option value="1.2">1.2</option>
+                                <option value="1.5" selected>1.5</option>
+                                <option value="2.0">Double</option>
+                            </select>
+                        </div>
+
+                        <div class="format-actions">
+                            <button class="action-btn reset-btn" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Side: Data Management and Preview -->
+            <div class="right-panel">
+                <!-- Empty State -->
+                <section class="empty-state" id="emptyState">
+                    <div class="empty-content">
+                        <div class="empty-icon">🎯</div>
+                        <h3>Flexible Document Generator</h3>
+                        <p>Upload your Excel file or connect to Google Sheets to get started</p>
+                        <div class="empty-features">
+                            <div class="empty-feature">
+                                <span class="feature-icon">✅</span>
+                                <span>Choose any columns from your data</span>
+                            </div>
+                            <div class="empty-feature">
+                                <span class="feature-icon">✅</span>
+                                <span>Custom field arrangements</span>
+                            </div>
+                            <div class="empty-feature">
+                                <span class="feature-icon">✅</span>
+                                <span>Professional document formatting</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Data Overview -->
+                <section class="data-overview-section" id="dataTable" style="display: none;">
+                    <div class="section-header">
+                        <h3>📊 Your Data Overview</h3>
+                        <p id="dataCount">Loading...</p>
+                    </div>
+                    <div class="table-container">
+                        <table id="dataTableContent">
+                            <thead id="dataTableHead"></thead>
+                            <tbody id="dataTableBody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Record Selection -->
+                <section class="record-selection-section" id="selectionSection" style="display: none;">
+                    <div class="section-header">
+                        <h3>🎯 Select Records</h3>
+                        <div class="selection-modes">
+                            <button class="mode-btn active" id="tableModeBtn" onclick="switchToTableMode()">
+                                📋 Table Selection
+                            </button>
+                            <button class="mode-btn" id="rowModeBtn" onclick="switchToRowMode()">
+                                📝 Row Range
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table Selection Mode -->
+                    <div class="selection-mode-content active" id="tableModeContent">
+                        <div class="selection-controls">
+                            <div class="selection-actions">
+                                <button class="action-btn" onclick="selectAllRows()">✅ Select All</button>
+                                <button class="action-btn" onclick="clearAllRows()">❌ Clear All</button>
+                                <button class="action-btn" onclick="selectFirstN()">🔢 Select First N</button>
+                            </div>
+                            
+                            <div class="first-n-input" id="firstNInput" style="display: none;">
+                                <input type="number" id="firstNValue" placeholder="Enter number" min="1">
+                                <button onclick="applyFirstN()">Apply</button>
+                            </div>
+                        </div>
+                        
+                        <div class="selection-table-container">
+                            <table id="selectionTable">
+                                <thead id="selectionTableHead"></thead>
+                                <tbody id="selectionTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Row Range Mode -->
+                    <div class="selection-mode-content" id="rowModeContent">
+                        <div class="row-range-inputs">
+                            <div class="range-input">
+                                <label for="startRow">Start Row:</label>
+                                <input type="number" id="startRow" min="1" value="1">
+                            </div>
+                            <div class="range-input">
+                                <label for="endRow">End Row:</label>
+                                <input type="number" id="endRow" min="1" value="10">
+                            </div>
+                        </div>
+                        <p class="range-note">Enter row numbers (excluding header row)</p>
+                    </div>
+
+                    <div class="selection-summary">
+                        <p id="selectionCount">No records selected</p>
+                    </div>
+                </section>
+
+                <!-- Document Preview -->
+                <section class="preview-section" id="previewSection" style="display: none;">
+                    <div class="section-header">
+                        <h3>👁️ Document Preview</h3>
+                        <p class="preview-note">Preview shows the first selected record</p>
+                    </div>
+                    <div class="preview-container">
+                        <div class="document-preview" id="documentPreview">
+                            <!-- Preview content will be generated here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Document Generation -->
+                <section class="generation-section" id="generateSection" style="display: none;">
+                    <div class="section-header">
+                        <h3>📄 Generate Document</h3>
+                        <p class="generation-note">Creates a single document with one page per selected record</p>
+                    </div>
+                    <div class="generate-buttons">
+                        <button class="generate-btn word-btn" id="generateWordBtn">
+                            📝 Generate Word Document
+                        </button>
+                        <button class="generate-btn pdf-btn" id="generatePdfBtn">
+                            📄 Generate PDF Document
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Status Section -->
+                <section class="status-section" id="statusSection" style="display: none;">
+                    <div class="status-content" id="statusContent"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="flexible-script.js"></script>
+</body>
+</html> 
