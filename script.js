@@ -156,7 +156,7 @@ function handleFileSelect(e) {
 
 function processFile(file) {
     if (!file.name.match(/\.(xlsx|xls)$/)) {
-        alert('Please select a valid Excel file (.xlsx or .xls)');
+        showStatus('⚠️ Please select a valid Excel file (.xlsx or .xls)', true);
         return;
     }
 
@@ -171,8 +171,7 @@ function processFile(file) {
             const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
             
             if (jsonData.length < 2) {
-                alert('Excel file must have at least 2 rows (header + data)');
-                hideStatus();
+                showStatus('⚠️ Excel file must have at least 2 rows (header + data)', true);
                 return;
             }
             
@@ -181,8 +180,7 @@ function processFile(file) {
             hideStatus();
         } catch (error) {
             console.error('Error reading file:', error);
-            alert('Error reading Excel file. Please make sure it\'s a valid Excel file.');
-            hideStatus();
+            showStatus('❌ Error reading Excel file. Please make sure it\'s a valid Excel file.', true);
         }
     };
     
@@ -195,12 +193,12 @@ async function loadGoogleSheetsData() {
     const url = urlInput.value.trim();
     
     if (!url) {
-        alert('Please enter a Google Sheets URL');
+        showStatus('⚠️ Please enter a Google Sheets URL', true);
         return;
     }
     
     if (!isValidGoogleSheetsUrl(url)) {
-        alert('Please enter a valid Google Sheets URL');
+        showStatus('⚠️ Please enter a valid Google Sheets URL', true);
         return;
     }
     
@@ -523,43 +521,35 @@ function extractSheetName(url) {
 
 // Common data processing functions
 function processExcelData(jsonData) {
-    const headers = jsonData[0];
-    const rows = jsonData.slice(1);
+    customerData = [];
     
-    // Find required column indices
-    const customerNameIndex = findColumnIndex(headers, ['customer name', 'name', 'customer']);
-    const addressIndex = findColumnIndex(headers, ['address', 'addr']);
-    const contactIndex = findColumnIndex(headers, ['contact number', 'contact', 'phone', 'mobile']);
-    
-    if (customerNameIndex === -1 || addressIndex === -1 || contactIndex === -1) {
-        alert('Required columns not found. Please ensure your data has columns for Customer Name, Address, and Contact Number.');
+    if (jsonData.length < 2) {
         return;
     }
     
-    // Process rows and maintain correct Excel row numbers
-    customerData = [];
-
-    console.log('Rows:ss', rows);
+    // Get headers and find column indices
+    const headers = jsonData[0].map(header => header ? header.toString().toLowerCase().trim() : '');
+    const nameIndex = findColumnIndex(headers, ['customer name', 'name', 'customer', 'client']);
+    const addressIndex = findColumnIndex(headers, ['address', 'addr', 'location']);
+    const contactIndex = findColumnIndex(headers, ['contact', 'phone', 'mobile', 'contact number', 'phone number', 'cell']);
     
-    for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        const customerName = row[customerNameIndex] || '';
-        const address = row[addressIndex] || '';
-        const contactNumber = row[contactIndex] || '';
-        
-        // Only include rows with customer name (but keep track of actual Excel row number)
-        if (customerName.trim() !== '') {
+    if (nameIndex === -1 || addressIndex === -1 || contactIndex === -1) {
+        showStatus('❌ Required columns not found. Please ensure your data has columns for Customer Name, Address, and Contact Number.', true);
+        return;
+    }
+    
+    // Process customer data
+    for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        if (row && row.length > 0 && row[nameIndex]) {
             customerData.push({
-                excelRowNumber: i, // Actual Excel row number (i + 2 because row 1 is header, and i starts at 0)
-                customerName: customerName,
-                address: address,
-                contactNumber: contactNumber
+                excelRowNumber: i + 1,
+                customerName: row[nameIndex] ? row[nameIndex].toString().trim() : '',
+                address: row[addressIndex] ? row[addressIndex].toString().trim() : '',
+                contactNumber: row[contactIndex] ? row[contactIndex].toString().trim() : ''
             });
         }
     }
-    
-    console.log('Processed customer data:', customerData);
-    console.log('Excel row numbers:', customerData.map(c => `Row ${c.excelRowNumber}: ${c.customerName}`));
 }
 
 function findColumnIndex(headers, possibleNames) {
@@ -730,12 +720,20 @@ function switchToRowMode() {
 }
 
 // Status functions
-function showStatus(message) {
+function showStatus(message, isError = false, autoHide = 0) {
     const statusSection = document.getElementById('statusSection');
+    const statusContent = document.getElementById('statusContent');
     const statusMessage = document.getElementById('statusMessage');
     
     statusMessage.textContent = message;
+    statusContent.className = isError ? 'status-content error' : 'status-content';
     statusSection.style.display = 'block';
+    
+    if (autoHide > 0) {
+        setTimeout(() => {
+            hideStatus();
+        }, autoHide);
+    }
 }
 
 function hideStatus() {
@@ -745,30 +743,30 @@ function hideStatus() {
 function validateInputs() {
     const startRow = parseInt(document.getElementById('startRow').value);
     const endRow = parseInt(document.getElementById('endRow').value);
+    const maxRow = customerData.length + 1;
     
     if (isNaN(startRow) || isNaN(endRow)) {
-        alert('Please enter valid row numbers');
+        showStatus('⚠️ Please enter valid row numbers', true);
         return false;
     }
     
     if (startRow < 2) {
-        alert('Start row must be at least 2 (row 1 is the header)');
+        showStatus('⚠️ Start row must be at least 2 (row 1 is the header)', true);
         return false;
     }
     
     if (startRow > endRow) {
-        alert('Start row cannot be greater than end row');
+        showStatus('⚠️ Start row cannot be greater than end row', true);
         return false;
     }
     
-    const maxRow = customerData.length + 1;
     if (endRow > maxRow) {
-        alert(`End row cannot be greater than ${maxRow} (total data rows + 1)`);
+        showStatus(`⚠️ End row cannot be greater than ${maxRow} (total data rows + 1)`, true);
         return false;
     }
     
     if (customerData.length === 0) {
-        alert('No customer data available. Please load data first.');
+        showStatus('⚠️ No customer data available. Please load data first.', true);
         return false;
     }
     
@@ -789,7 +787,7 @@ async function generateDocument(format = 'word') {
         selectedCustomers = getSelectedCustomers();
         
         if (selectedCustomers.length === 0) {
-            alert('Please select at least one customer from the table above.');
+            showStatus('⚠️ Please select at least one customer from the table above.', true);
             return;
         }
     } else {
@@ -807,13 +805,13 @@ async function generateDocument(format = 'word') {
         );
         
         if (selectedCustomers.length === 0) {
-            alert('No customers found in the selected row range.');
+            showStatus('⚠️ No customers found in the selected row range.', true);
             return;
         }
     }
     
     if (customerData.length === 0) {
-        alert('No customer data available. Please load data first.');
+        showStatus('⚠️ No customer data available. Please load data first.', true);
         return;
     }
     
@@ -829,18 +827,17 @@ async function generateDocument(format = 'word') {
             const doc = await createWordDocument(selectedCustomers);
             const blob = await docx.Packer.toBlob(doc);
             downloadDocument(blob, `JD_Sons_Customers_Rows_${startRow}-${endRow}.docx`);
+            showStatus(`✅ Word document generated successfully! ${selectedCustomers.length} customers included.`, false, 3000);
         } else if (format === 'pdf') {
             await generatePdfDocument(selectedCustomers, startRow, endRow);
+            showStatus(`✅ PDF document generated successfully! ${selectedCustomers.length} customers included.`, false, 3000);
         }
-        
-        hideStatus();
         
         console.log(`Document generated successfully - ${format.toUpperCase()}: ${formatSettings.paperWidth}×${formatSettings.paperHeight}cm, Font: ${formatSettings.fontFamily.split(',')[0]} ${formatSettings.bodyFontSize}px, Customers: ${selectedCustomers.length}`);
         
     } catch (error) {
         console.error(`Error generating ${format} document:`, error);
-        alert(`Error generating ${format.toUpperCase()} document. Please try again.`);
-        hideStatus();
+        showStatus(`❌ Error generating ${format.toUpperCase()} document. Please try again.`, true);
     }
 }
 
@@ -1010,12 +1007,36 @@ async function createWordDocument(customers) {
                             right: Math.round(formatSettings.marginRight * 567),
                             bottom: Math.round(formatSettings.marginBottom * 567),
                             left: Math.round(formatSettings.marginLeft * 567)
+                        },
+                        // Remove page numbers and any automated content
+                        pageNumbers: {
+                            start: 0,
+                            formatType: docx.PageNumberFormat.DECIMAL
                         }
+                    },
+                    // Explicitly remove all headers and footers
+                    headers: {
+                        default: undefined,
+                        first: undefined,
+                        even: undefined
+                    },
+                    footers: {
+                        default: undefined,
+                        first: undefined,
+                        even: undefined
                     }
                 },
                 children: children
             }
-        ]
+        ],
+        // Document-level settings to prevent headers/footers
+        creator: "",
+        title: "",
+        description: "",
+        lastModifiedBy: "",
+        revision: "",
+        createdAt: new Date(),
+        modifiedAt: new Date()
     });
     
     return doc;
@@ -1032,31 +1053,102 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
     <html>
     <head>
         <meta charset="UTF-8">
-        <title>JD Sons Customer Documents</title>
+        <title></title>
         <style>
             @page {
                 size: ${pageWidth}cm ${pageHeight}cm;
-                margin: 0;
+                margin: ${formatSettings.marginTop}cm ${formatSettings.marginRight}cm ${formatSettings.marginBottom}cm ${formatSettings.marginLeft}cm;
+                /* Completely remove all headers and footers */
+                @top-left-corner { content: ""; }
+                @top-left { content: ""; }
+                @top-center { content: ""; }
+                @top-right { content: ""; }
+                @top-right-corner { content: ""; }
+                @bottom-left-corner { content: ""; }
+                @bottom-left { content: ""; }
+                @bottom-center { content: ""; }
+                @bottom-right { content: ""; }
+                @bottom-right-corner { content: ""; }
+                @left-top { content: ""; }
+                @left-middle { content: ""; }
+                @left-bottom { content: ""; }
+                @right-top { content: ""; }
+                @right-middle { content: ""; }
+                @right-bottom { content: ""; }
             }
             @media print {
                 @page {
                     size: ${pageWidth}cm ${pageHeight}cm;
-                    margin: 0;
+                    margin: ${formatSettings.marginTop}cm ${formatSettings.marginRight}cm ${formatSettings.marginBottom}cm ${formatSettings.marginLeft}cm;
                 }
+                
+                /* Hide all browser-generated content */
+                @page :first {
+                    @top-left-corner { content: "" !important; }
+                    @top-left { content: "" !important; }
+                    @top-center { content: "" !important; }
+                    @top-right { content: "" !important; }
+                    @top-right-corner { content: "" !important; }
+                    @bottom-left-corner { content: "" !important; }
+                    @bottom-left { content: "" !important; }
+                    @bottom-center { content: "" !important; }
+                    @bottom-right { content: "" !important; }
+                    @bottom-right-corner { content: "" !important; }
+                }
+                
+                @page :left {
+                    @top-left-corner { content: "" !important; }
+                    @top-left { content: "" !important; }
+                    @top-center { content: "" !important; }
+                    @top-right { content: "" !important; }
+                    @top-right-corner { content: "" !important; }
+                    @bottom-left-corner { content: "" !important; }
+                    @bottom-left { content: "" !important; }
+                    @bottom-center { content: "" !important; }
+                    @bottom-right { content: "" !important; }
+                    @bottom-right-corner { content: "" !important; }
+                }
+                
+                @page :right {
+                    @top-left-corner { content: "" !important; }
+                    @top-left { content: "" !important; }
+                    @top-center { content: "" !important; }
+                    @top-right { content: "" !important; }
+                    @top-right-corner { content: "" !important; }
+                    @bottom-left-corner { content: "" !important; }
+                    @bottom-left { content: "" !important; }
+                    @bottom-center { content: "" !important; }
+                    @bottom-right { content: "" !important; }
+                    @bottom-right-corner { content: "" !important; }
+                }
+                
                 body {
                     -webkit-print-color-adjust: exact;
                     color-adjust: exact;
                     print-color-adjust: exact;
                 }
+                
+                /* Hide any potential header/footer elements */
+                .print-header, .print-footer, 
+                header, footer,
+                .page-header, .page-footer {
+                    display: none !important;
+                    visibility: hidden !important;
+                    height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
             }
+            
             * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
             }
+            
             html, body {
-                width: ${pageWidth}cm;
-                height: ${pageHeight}cm;
+                width: 100%;
+                height: 100%;
                 font-family: ${formatSettings.fontFamily};
                 margin: 0;
                 padding: 0;
@@ -1064,21 +1156,22 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
                 line-height: ${formatSettings.lineSpacing};
                 color: ${formatSettings.textColor};
                 background: white;
-                overflow: hidden;
             }
+            
             .page {
-                width: ${pageWidth}cm;
-                height: ${pageHeight}cm;
-                padding: ${formatSettings.marginTop}cm ${formatSettings.marginRight}cm ${formatSettings.marginBottom}cm ${formatSettings.marginLeft}cm;
+                width: 100%;
+                min-height: 100vh;
                 page-break-after: always;
                 box-sizing: border-box;
-                overflow: hidden;
                 display: block;
                 position: relative;
+                padding: 0;
             }
+            
             .page:last-child {
                 page-break-after: avoid;
             }
+            
             .customer-header {
                 font-weight: bold;
                 color: ${formatSettings.headerColor};
@@ -1087,6 +1180,7 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
                 line-height: ${formatSettings.lineSpacing};
                 display: block;
             }
+            
             .field-label {
                 font-weight: bold;
                 display: inline;
@@ -1094,23 +1188,27 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
                 color: ${formatSettings.textColor};
                 line-height: ${formatSettings.lineSpacing};
             }
+            
             .field-value {
                 color: ${formatSettings.textColor};
                 display: inline;
                 font-size: ${formatSettings.bodyFontSize}px;
                 line-height: ${formatSettings.lineSpacing};
             }
+            
             .field {
                 margin-bottom: 0.5cm;
                 line-height: ${formatSettings.lineSpacing};
                 display: block;
             }
+            
             .divider {
-                border-top: 3px solid #666;
+                border-top: 2px solid #666;
                 margin: 0.7cm 0;
                 width: 100%;
                 display: block;
             }
+            
             .from-details {
                 color: ${formatSettings.companyColor};
                 font-weight: bold;
@@ -1119,6 +1217,7 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
                 line-height: ${formatSettings.lineSpacing};
                 display: block;
             }
+            
             .from-contact {
                 color: ${formatSettings.companyColor};
                 font-weight: bold;
@@ -1127,6 +1226,46 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
                 display: block;
             }
         </style>
+        
+        <script>
+            // Remove browser headers/footers programmatically
+            window.onload = function() {
+                // Try to hide browser print headers/footers
+                if (window.matchMedia) {
+                    var mediaQueryList = window.matchMedia('print');
+                    mediaQueryList.addListener(function(mql) {
+                        if (mql.matches) {
+                            // Hide any browser-generated elements
+                            document.body.style.margin = '0';
+                            document.body.style.padding = '0';
+                            document.documentElement.style.margin = '0';
+                            document.documentElement.style.padding = '0';
+                        }
+                    });
+                }
+                
+                // Set document title to empty to prevent it from showing in header
+                document.title = '';
+                
+                // Try to execute print commands to hide headers/footers
+                setTimeout(function() {
+                    // Focus and print
+                    window.focus();
+                    window.print();
+                }, 500);
+            };
+            
+            // Additional script to handle print settings
+            window.onbeforeprint = function() {
+                document.title = '';
+                // Remove any potential header/footer content
+                var headers = document.querySelectorAll('header, .header, .print-header');
+                var footers = document.querySelectorAll('footer, .footer, .print-footer');
+                
+                headers.forEach(function(el) { el.style.display = 'none'; });
+                footers.forEach(function(el) { el.style.display = 'none'; });
+            };
+        </script>
     </head>
     <body>`;
 
@@ -1162,14 +1301,35 @@ async function generatePdfDocument(customers, startRowNumber, endRowNumber) {
     </html>`;
 
     // Create a temporary window for PDF generation
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    
+    // Set window properties to minimize browser headers/footers
     printWindow.document.write(htmlContent);
     printWindow.document.close();
     
+    // Clear the title to prevent it from showing in header
+    printWindow.document.title = '';
+    
     // Wait for content to load, then open print dialog
     setTimeout(() => {
+        // Additional cleanup before printing
+        printWindow.document.title = '';
         printWindow.focus();
+        
+        // Try to hide browser chrome programmatically
+        if (printWindow.document.head) {
+            const meta = printWindow.document.createElement('meta');
+            meta.name = 'format-detection';
+            meta.content = 'telephone=no';
+            printWindow.document.head.appendChild(meta);
+        }
+        
         printWindow.print();
+        
+        // Close the window after a delay to allow printing
+        setTimeout(() => {
+            printWindow.close();
+        }, 2000);
     }, 1000);
 }
 
@@ -1324,7 +1484,7 @@ function updatePreview() {
 }
 
 function resetToDefaults() {
-    // Reset to default values
+    // Reset all format settings to defaults
     formatSettings = {
         paperWidth: 7.75,
         paperHeight: 12.5,
@@ -1341,7 +1501,7 @@ function resetToDefaults() {
         lineSpacing: '1.2'
     };
     
-    // Update form inputs
+    // Update all form inputs
     document.getElementById('paperSizeSelect').value = 'receipt';
     document.getElementById('paperWidth').value = formatSettings.paperWidth;
     document.getElementById('paperHeight').value = formatSettings.paperHeight;
@@ -1357,21 +1517,19 @@ function resetToDefaults() {
     document.getElementById('companyColor').value = formatSettings.companyColor;
     document.getElementById('lineSpacing').value = formatSettings.lineSpacing;
     
+    updateFormat();
     updatePreview();
     
-    // Show confirmation
-    alert('✅ Format settings have been reset to defaults!');
+    showStatus('✅ Format settings have been reset to defaults!', false, 3000);
 }
 
 function saveFormatSettings() {
     try {
-        // Make sure we have the latest format settings before saving
-        updateFormat();
         localStorage.setItem('jdSonsFormatSettings', JSON.stringify(formatSettings));
-        alert('✅ Format settings have been saved successfully!');
+        showStatus('✅ Format settings have been saved successfully!', false, 3000);
     } catch (error) {
         console.error('Error saving format settings:', error);
-        alert('❌ Error saving format settings. Please try again.');
+        showStatus('❌ Error saving format settings. Please try again.', true, 3000);
     }
 }
 
